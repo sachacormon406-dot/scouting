@@ -1,0 +1,470 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Joueurs à suivre — Scouting Tracker</title>
+<style>
+*{box-sizing:border-box;margin:0;padding:0}
+body{font-family:system-ui,-apple-system,sans-serif;background:#f8f8f6;color:#1a1a1a;padding:1.5rem}
+.wrap{max-width:1500px;margin:0 auto}
+.header{display:flex;align-items:center;justify-content:space-between;margin-bottom:1.5rem;flex-wrap:wrap;gap:12px}
+.title{font-size:20px;font-weight:500}
+.subtitle{font-size:13px;color:#888;margin-top:2px}
+.actions{display:flex;gap:8px;flex-wrap:wrap;align-items:center}
+.btn{background:transparent;border:0.5px solid #ccc;border-radius:8px;padding:7px 14px;font-size:13px;cursor:pointer;color:#1a1a1a;transition:background 0.15s;font-family:inherit}
+.btn:hover{background:#f0f0ee}
+.btn.primary{background:#dbeafe;border-color:#93c5fd;color:#1e40af;font-weight:500}
+.btn.primary:hover{opacity:0.85}
+.btn.danger{color:#b91c1c;border-color:#fca5a5}
+.btn.danger:hover{background:#fef2f2}
+.stats{display:grid;grid-template-columns:repeat(5,1fr);gap:10px;margin-bottom:1.5rem}
+@media(max-width:700px){.stats{grid-template-columns:repeat(2,1fr)}}
+.stat{background:#fff;border-radius:8px;padding:12px 14px;border:0.5px solid #e5e5e3}
+.stat-label{font-size:12px;color:#888;margin-bottom:4px}
+.stat-val{font-size:20px;font-weight:500}
+.filters{display:grid;grid-template-columns:repeat(auto-fit,minmax(115px,1fr));gap:8px;margin-bottom:1.25rem}
+.filters input,.filters select{width:100%;font-size:13px;padding:7px 10px;border-radius:8px;border:0.5px solid #ddd;background:#fff;color:#1a1a1a;font-family:inherit}
+.table-wrap{overflow-x:auto;border:0.5px solid #e5e5e3;border-radius:12px;background:#fff}
+table{width:100%;border-collapse:collapse;font-size:13px}
+thead{background:#f8f8f6}
+th{padding:10px 10px;text-align:left;font-weight:500;font-size:11px;color:#888;white-space:nowrap;border-bottom:0.5px solid #e5e5e3}
+td{padding:8px 10px;border-bottom:0.5px solid #e5e5e3;vertical-align:middle}
+tr:last-child td{border-bottom:none}
+tr:hover td{background:#fafaf8}
+.badge{display:inline-block;padding:2px 7px;border-radius:20px;font-size:11px;font-weight:500;white-space:nowrap}
+.badge-gb{background:#f3e8ff;color:#6b21a8}
+.badge-dd,.badge-dc,.badge-dg{background:#dcfce7;color:#166534}
+.badge-mdc,.badge-mc,.badge-moc{background:#fef9c3;color:#854d0e}
+.badge-ad,.badge-ag,.badge-bu{background:#ffedd5;color:#9a3412}
+.pied-d{display:inline-block;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:500;background:#dbeafe;color:#1e40af}
+.pied-g{display:inline-block;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:500;background:#fce7f3;color:#9d174d}
+.pied-2{display:inline-block;padding:2px 6px;border-radius:4px;font-size:11px;font-weight:500;background:#dcfce7;color:#166534}
+.stars{color:#f59e0b;font-size:12px}
+.vm-cell{font-variant-numeric:tabular-nums;white-space:nowrap}
+.evol-up{color:#16a34a;font-size:10px}
+.evol-dn{color:#dc2626;font-size:10px}
+.notes-cell{max-width:110px;white-space:nowrap;overflow:hidden;text-overflow:ellipsis;color:#888;font-size:12px}
+.empty{text-align:center;padding:3rem;color:#bbb}
+.count{font-size:12px;color:#888;margin-bottom:8px}
+.tm-link{color:inherit;text-decoration:none;border-bottom:1.5px dashed #d1a832;cursor:pointer}
+.tm-link:hover{color:#b45309}
+.modal-bg{position:fixed;inset:0;background:rgba(0,0,0,0.4);display:flex;align-items:flex-start;justify-content:center;z-index:1000;padding:2rem 1rem;overflow-y:auto}
+.modal{background:#fff;border:0.5px solid #e5e5e3;border-radius:12px;padding:1.5rem;width:100%;max-width:600px;margin:auto}
+.modal-title{font-size:16px;font-weight:500;margin-bottom:1.25rem}
+.form-grid{display:grid;grid-template-columns:1fr 1fr;gap:10px}
+.form-grid .full{grid-column:1/-1}
+.form-label{display:block;font-size:12px;color:#888;margin-bottom:4px}
+.form-grid input,.form-grid select,.form-grid textarea{width:100%;font-size:13px;padding:7px 10px;border-radius:8px;border:0.5px solid #ddd;background:#fff;color:#1a1a1a;font-family:inherit}
+.form-grid textarea{resize:vertical;min-height:60px}
+.modal-footer{display:flex;gap:8px;justify-content:flex-end;margin-top:1.25rem;padding-top:1rem;border-top:0.5px solid #e5e5e3}
+.age-warn-form{font-size:11px;color:#b45309;margin-top:3px;display:none}
+.toast{position:fixed;bottom:1.5rem;right:1.5rem;background:#1a1a1a;color:#fff;padding:10px 18px;border-radius:8px;font-size:13px;z-index:9999;opacity:0;transition:opacity 0.3s;pointer-events:none}
+.toast.show{opacity:1}
+.section-title{font-size:11px;font-weight:500;color:#888;text-transform:uppercase;letter-spacing:0.05em;grid-column:1/-1;margin-top:6px;padding-bottom:4px;border-bottom:0.5px solid #e5e5e3}
+</style>
+</head>
+<body>
+<div class="wrap">
+  <div class="header">
+    <div>
+      <div class="title">Joueurs à suivre</div>
+      <div class="subtitle">U23 max — VM max 20M€ — <span id="date-display"></span></div>
+    </div>
+    <div class="actions">
+      <button class="btn" onclick="exportData()">⬇ Exporter JSON</button>
+      <label class="btn" style="cursor:pointer">⬆ Importer JSON
+        <input type="file" id="import-file" accept=".json" style="display:none" onchange="importData(event)">
+      </label>
+      <button class="btn primary" onclick="openModal(null)">+ Ajouter un joueur</button>
+    </div>
+  </div>
+
+  <div class="stats">
+    <div class="stat"><div class="stat-label">Total joueurs</div><div class="stat-val" id="s-total">0</div></div>
+    <div class="stat"><div class="stat-label">VM moy. actuelle</div><div class="stat-val" id="s-vm">—</div></div>
+    <div class="stat"><div class="stat-label">Âge moyen</div><div class="stat-val" id="s-age">—</div></div>
+    <div class="stat"><div class="stat-label">Postes</div><div class="stat-val" id="s-postes">—</div></div>
+    <div class="stat"><div class="stat-label">Plus-value totale</div><div class="stat-val" id="s-plusvalue">—</div></div>
+  </div>
+
+  <div class="filters">
+    <input type="text" id="f-search" placeholder="🔍 Rechercher..." oninput="render()">
+    <select id="f-poste" onchange="render()">
+      <option value="">Tous postes</option>
+      <option>GB</option><option>DD</option><option>DC</option><option>DG</option>
+      <option>MDC</option><option>MC</option><option>MOC</option>
+      <option>AD</option><option>AG</option><option>BU</option>
+    </select>
+    <select id="f-nat" onchange="render()"><option value="">Toutes nationalités</option></select>
+    <select id="f-pied" onchange="render()">
+      <option value="">Tous pieds</option>
+      <option value="D">Pied droit</option>
+      <option value="G">Pied gauche</option>
+      <option value="2">Les deux pieds</option>
+    </select>
+    <select id="f-stars" onchange="render()">
+      <option value="">Toutes notes</option>
+      <option value="5">5★</option><option value="4.5">4.5★+</option>
+      <option value="4">4★+</option><option value="3">3★+</option><option value="0">À voir</option>
+    </select>
+    <input type="number" id="f-age-max" placeholder="Âge max" min="13" max="25" oninput="render()">
+    <input type="number" id="f-vm-max" placeholder="VM max (M€)" step="0.5" oninput="render()">
+    <select id="f-sort" onchange="render()">
+      <option value="stars_desc">Note ↓</option>
+      <option value="date_desc">Date ↓</option>
+      <option value="date_asc">Date ↑</option>
+      <option value="age_asc">Âge ↑</option>
+      <option value="age_desc">Âge ↓</option>
+      <option value="vm_desc">VM ↓</option>
+      <option value="vm_asc">VM ↑</option>
+      <option value="evol_desc">Plus-value ↓</option>
+      <option value="nom_asc">Nom A→Z</option>
+    </select>
+  </div>
+
+  <div class="count" id="count-line"></div>
+
+  <div class="table-wrap">
+    <table>
+      <thead><tr>
+        <th>#</th><th>Nom</th><th>Poste</th><th>Âge</th><th>Pied</th><th>Note</th>
+        <th>Nationalité</th><th>Club</th><th>VM ajout</th><th>VM actuelle</th>
+        <th>Évolution</th><th>Style</th><th>Notes</th><th>Date ajout</th><th></th>
+      </tr></thead>
+      <tbody id="tbody"></tbody>
+    </table>
+    <div id="empty-state" class="empty" style="display:none">Aucun joueur trouvé</div>
+  </div>
+</div>
+
+<div class="modal-bg" id="modal" style="display:none">
+  <div class="modal">
+    <div class="modal-title" id="modal-title">Nouveau joueur</div>
+    <div class="form-grid">
+      <div class="section-title">Identité</div>
+      <div class="full">
+        <label class="form-label">Nom complet *</label>
+        <input type="text" id="f-nom" placeholder="ex: Kylian Mbappé">
+      </div>
+      <div>
+        <label class="form-label">Poste *</label>
+        <select id="f-fposte">
+          <option value="">— choisir —</option>
+          <option>GB</option><option>DD</option><option>DC</option><option>DG</option>
+          <option>MDC</option><option>MC</option><option>MOC</option>
+          <option>AD</option><option>AG</option><option>BU</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Âge</label>
+        <input type="number" id="f-fage" min="13" max="40" placeholder="ex: 19" oninput="checkAge()">
+        <div class="age-warn-form" id="age-warn">⚠ Plus de 23 ans</div>
+      </div>
+      <div>
+        <label class="form-label">Pied fort</label>
+        <select id="f-fpied">
+          <option value="">— inconnu —</option>
+          <option value="D">Droit</option>
+          <option value="G">Gauche</option>
+          <option value="2">Les deux</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Nationalité</label>
+        <input type="text" id="f-fnat" placeholder="ex: Français">
+      </div>
+      <div>
+        <label class="form-label">Club actuel</label>
+        <input type="text" id="f-fclub" placeholder="ex: RC Lens">
+      </div>
+      <div class="section-title">Évaluation</div>
+      <div>
+        <label class="form-label">Note (★)</label>
+        <select id="f-fstars">
+          <option value="">À voir</option>
+          <option value="1">1★</option><option value="1.5">1.5★</option>
+          <option value="2">2★</option><option value="2.5">2.5★</option>
+          <option value="3">3★</option><option value="3.5">3.5★</option>
+          <option value="4">4★</option><option value="4.5">4.5★</option>
+          <option value="5">5★</option>
+        </select>
+      </div>
+      <div>
+        <label class="form-label">Date d'ajout</label>
+        <input type="date" id="f-fdate">
+      </div>
+      <div>
+        <label class="form-label">VM à l'ajout (M€)</label>
+        <input type="number" id="f-fvmadd" step="0.1" min="0" placeholder="ex: 5">
+      </div>
+      <div>
+        <label class="form-label">VM actuelle (M€)</label>
+        <input type="number" id="f-fvm" step="0.1" min="0" placeholder="ex: 5">
+      </div>
+      <div class="full">
+        <label class="form-label">Style de joueur</label>
+        <input type="text" id="f-fstyle" placeholder="ex: Ailier technique, bon dribbleur">
+      </div>
+      <div class="full">
+        <label class="form-label">Notes / commentaires</label>
+        <textarea id="f-fnotes" placeholder="Observations, matchs vus..."></textarea>
+      </div>
+      <div class="section-title">Lien</div>
+      <div class="full">
+        <label class="form-label">Lien Transfermarkt</label>
+        <input type="text" id="f-ftm" placeholder="https://www.transfermarkt.fr/nom/profil/spieler/123456">
+      </div>
+    </div>
+    <div class="modal-footer">
+      <button class="btn" id="btn-cancel" type="button">Annuler</button>
+      <button class="btn primary" id="btn-save" type="button">Enregistrer</button>
+    </div>
+  </div>
+</div>
+
+<div class="toast" id="toast"></div>
+<script>
+const PRELOADED=[{"id":"1nfjmojp","nom":"George Ilenikhena","poste":"BU","age":"18","nat":"Nigérian","club":"AS Monaco","vm_add":"7","vm":"12","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/george-ilenikhena/profil/spieler/1004834","style":"4★","notes":"","pied":""},{"id":"0d94jfkz","nom":"Pio Esposito","poste":"BU","age":"19","nat":"Italien","club":"Spezia","vm_add":"3","vm":"45","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/pio-esposito/profil/spieler/930781","style":"3★","notes":"","pied":""},{"id":"9phw9f17","nom":"Chido Obi-Martin","poste":"BU","age":"17","nat":"Danois","club":"Arsenal","vm_add":"0.4","vm":"5","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/chido-obi/profil/spieler/1042886","style":"5★","notes":"","pied":""},{"id":"gz3ehmju","nom":"Orri Óskarsson","poste":"BU","age":"20","nat":"Islandais","club":"FC Copenhague","vm_add":"5","vm":"12","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/orri-oskarsson/profil/spieler/660438","style":"3★","notes":"","pied":""},{"id":"zmt3smmd","nom":"Semih Kılıçsoy","poste":"BU","age":"19","nat":"Turc","club":"Besiktas","vm_add":"12","vm":"13","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/semih-kilicsoy/profil/spieler/875334","style":"3.5★","notes":"","pied":""},{"id":"zg2fytht","nom":"Francesco Camarda","poste":"BU","age":"16","nat":"Italien","club":"AC Milan","vm_add":"10","vm":"15","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/francesco-camarda/profil/spieler/1058368","style":"5★","notes":"","pied":""},{"id":"xvfshp7o","nom":"Eli Junior Kroupi","poste":"BU","age":"18","nat":"Français","club":"Lorient","vm_add":"10","vm":"40","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/junior-kroupi/profil/spieler/955357","style":"4★","notes":"","pied":""},{"id":"udazxuu4","nom":"Gabriel Silva","poste":"BU","age":"17","nat":"Portugais","club":"Sporting","vm_add":"0","vm":"0.25","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/gabriel-silva/profil/spieler/1006454","style":"2.5★","notes":"","pied":""},{"id":"lxm2q7vr","nom":"Franjo Ivanovic","poste":"BU","age":"21","nat":"Croate","club":"Union SG","vm_add":"4","vm":"20","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/franjo-ivanovic/profil/spieler/548028","style":"2★","notes":"","pied":""},{"id":"29rgzhjj","nom":"Santiago Castro","poste":"BU","age":"19","nat":"Argentin","club":"Bologna","vm_add":"7","vm":"35","date":"2025-01-09","style":"4★","notes":"","tm_url":"https://www.transfermarkt.fr/santiago-castro/profil/spieler/905447","pied":""},{"id":"yga1iyfe","nom":"Conrad Harder","poste":"BU","age":"19","nat":"Danois","club":"Sporting","vm_add":"18","vm":"20","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/conrad-harder/profil/spieler/807386","style":"3.5★","notes":"","pied":""},{"id":"10s1svyr","nom":"Stefanos Tzimas","poste":"BU","age":"18","nat":"Grec","club":"Nuremberg","vm_add":"10","vm":"20","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/stefanos-tzimas/profil/spieler/950091","style":"4.5★","notes":"","pied":""},{"id":"i5ywd9xb","nom":"Kauã Elias","poste":"BU","age":"18","nat":"Brésilien","club":"Fluminense","vm_add":"9","vm":"15","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/kaua-elias/profil/spieler/1119009","style":"3.5★","notes":"","pied":""},{"id":"twuvtust","nom":"Shumaira Mheuka","poste":"BU","age":"17","nat":"Anglais","club":"Chelsea","vm_add":"0","vm":"3","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/shumaira-mheuka/profil/spieler/982097","style":"2★","notes":"","pied":""},{"id":"jmdiyr06","nom":"Nelson Weiper","poste":"BU","age":"19","nat":"Allemand","club":"Mainz","vm_add":"4","vm":"10","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/nelson-weiper/profil/spieler/796213","style":"3.5★","notes":"","pied":""},{"id":"9auule6f","nom":"Mihajlo Cvetkovic","poste":"BU","age":"17","nat":"Serbe","club":"Cukaricki","vm_add":"5","vm":"6","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/mihajlo-cvetkovic/profil/spieler/897510","style":"3.5★","notes":"","pied":""},{"id":"n1n89caq","nom":"Charalampos Kostoulas","poste":"BU","age":"17","nat":"Grec","club":"Olympiakos","vm_add":"3","vm":"25","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/charalampos-kostoulas/profil/spieler/1060087","style":"2.5★","notes":"","pied":""},{"id":"vd8b43nu","nom":"Enzo Molebe","poste":"BU","age":"17","nat":"Français","club":"Lyon","vm_add":"0.1","vm":"0.3","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/enzo-molebe/profil/spieler/1106860","style":"1.5★","notes":"","pied":""},{"id":"od2jr2q4","nom":"Jerónimo Dómina","poste":"BU","age":"19","nat":"Argentin","club":"Unión Santa Fe","vm_add":"3.2","vm":"2","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/jeronimo-domina/profil/spieler/1103986","style":"","notes":"","pied":""},{"id":"xmi5b1eg","nom":"Reigan Heskey","poste":"BU","age":"16","nat":"Anglais","club":"Man City","vm_add":"0","vm":"0","date":"2025-01-09","style":"","notes":"","tm_url":"https://www.transfermarkt.fr/reigan-heskey/profil/spieler/0","pied":""},{"id":"jrz7xmjf","nom":"Agustín Ruberto","poste":"BU","age":"19","nat":"Argentin","club":"River Plate","vm_add":"3","vm":"2","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/agustin-ruberto/profil/spieler/1000688","style":"3★","notes":"","pied":""},{"id":"hp81y4ax","nom":"Julian Hall","poste":"BU","age":"16","nat":"Américain","club":"Red Bull New York","vm_add":"0.5","vm":"1","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/julian-hall/profil/spieler/1054470","style":"","notes":"","pied":""},{"id":"ootchw25","nom":"Mustafa Hekimoğlu","poste":"BU","age":"17","nat":"Turc","club":"Besiktas","vm_add":"2.5","vm":"5","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/mustafa-hekimoglu/profil/spieler/1071252","style":"","notes":"","pied":""},{"id":"bgvdeib9","nom":"Gassimou Sylla","poste":"BU","age":"16","nat":"Belge","club":"Anderlecht","vm_add":"0.4","vm":"0.25","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/gassimou-sylla/profil/spieler/1105537","style":"","notes":"","pied":""},{"id":"snc86ii5","nom":"Ozan Demirbağ","poste":"BU","age":"16","nat":"Turc","club":"Adana Demirspor","vm_add":"0.1","vm":"0.175","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/ozan-demirbag/profil/spieler/1201294","style":"","notes":"","pied":""},{"id":"u9dv7qvm","nom":"Anhá Cande","poste":"BU","age":"17","nat":"Portugais","club":"Porto","vm_add":"2.2","vm":"1.5","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/anha-cande/profil/spieler/1108856","style":"","notes":"","pied":""},{"id":"g3ho7srw","nom":"James Wilson","poste":"BU","age":"17","nat":"Écossais","club":"Heart of Midlothian FC","vm_add":"0.8","vm":"1.2","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/james-wilson/profil/spieler/1041600","style":"","notes":"","pied":""},{"id":"rucbxfhf","nom":"Max Moerstedt","poste":"BU","age":"18","nat":"Allemand","club":"Hoffenheim","vm_add":"4","vm":"7","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/max-moerstedt/profil/spieler/923595","style":"","notes":"","pied":""},{"id":"t7jggyun","nom":"Milos Lukovic","poste":"BU","age":"19","nat":"Serbe","club":"Strasbourg","vm_add":"5","vm":"5","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/milos-lukovic/profil/spieler/845872","style":"2★","notes":"","pied":""},{"id":"uh6y8c7u","nom":"Djylian N'Guessan","poste":"BU","age":"16","nat":"Français","club":"Saint-Etienne","vm_add":"0.8","vm":"5","date":"2025-03-01","tm_url":"https://www.transfermarkt.fr/djylian-nguessan/profil/spieler/1200419","style":"3.5★","notes":"","pied":""},{"id":"rrcpnt57","nom":"Bynoe-Gittens","poste":"AG","age":"20","nat":"Anglais","club":"Borussia Dortmund","vm_add":"18","vm":"35","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/jamie-gittens/profil/spieler/670882","style":"5★","notes":"","pied":""},{"id":"6wc8f8gh","nom":"Mikey Moore","poste":"AG","age":"17","nat":"Anglais","club":"Tottenham","vm_add":"1","vm":"16","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/mikey-moore/profil/spieler/1011147","style":"5★","notes":"","pied":""},{"id":"7m8prmak","nom":"Julien Duranville","poste":"AG","age":"18","nat":"Belge","club":"Borussia Dortmund","vm_add":"8.5","vm":"7","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/julien-duranville/profil/spieler/819215","style":"4★","notes":"","pied":""},{"id":"n71jr6vx","nom":"Leo Sauer","poste":"AG","age":"19","nat":"Tchèque","club":"NAC Breda","vm_add":"5","vm":"7","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/leo-sauer/profil/spieler/710886","style":"","notes":"","pied":""},{"id":"2xlywxon","nom":"Bazoumana Touré","poste":"AG","age":"18","nat":"Ivoirien","club":"Hammarby","vm_add":"9","vm":"35","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/bazoumana-toure/profil/spieler/1067904","style":"","notes":"","pied":""},{"id":"alxd498c","nom":"Martín Mundaca","poste":"AG","age":"17","nat":"Chilien","club":"Coquimbo Unido","vm_add":"0.65","vm":"0.65","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/martin-mundaca/profil/spieler/1249764","style":"","notes":"","pied":""},{"id":"fytnxswg","nom":"Gabriel Mec","poste":"AG","age":"16","nat":"Brésilien","club":"Grêmio","vm_add":"0","vm":"12","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/gabriel-mec/profil/spieler/1228661","style":"","notes":"","pied":""},{"id":"0i0ifa1k","nom":"William Gomes","poste":"AG","age":"18","nat":"Brésilien","club":"FC São Paulo","vm_add":"6","vm":"20","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/william-gomes/profil/spieler/1004725","style":"","notes":"","pied":""},{"id":"t03yrtpd","nom":"Santiago López","poste":"AG","age":"18","nat":"Argentin","club":"Independiente","vm_add":"2","vm":"2","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/santiago-lopez/profil/spieler/1000687","style":"","notes":"","pied":""},{"id":"o7g3xiq2","nom":"Mika Godts","poste":"AG","age":"18","nat":"Belge","club":"Ajax","vm_add":"10","vm":"25","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/mika-godts/profil/spieler/748804","style":"4.5★","notes":"Manque un petit peu de vitesse pour avoir tout ce qu'il faut","pied":""},{"id":"dghsuivq","nom":"Kerim Alajbegovic","poste":"AG","age":"17","nat":"Bosnien","club":"Leverkusen","vm_add":"0","vm":"15","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/kerim-alajbegovic/profil/spieler/929994","style":"3.5★","notes":"","pied":""},{"id":"vmr0ua8o","nom":"Óscar Perea","poste":"AG","age":"19","nat":"Colombien","club":"Strasbourg","vm_add":"2.5","vm":"2","date":"2025-01-27","tm_url":"https://www.transfermarkt.fr/oscar-perea/profil/spieler/1015624","style":"3★","notes":"","pied":""},{"id":"fm7cpduu","nom":"Andreas Schjelderup","poste":"AG","age":"20","nat":"Norvégien","club":"Benfica","vm_add":"10","vm":"20","date":"2025-02-12","tm_url":"https://www.transfermarkt.fr/andreas-schjelderup/profil/spieler/670103","style":"4★","notes":"","pied":""},{"id":"a3iytqm0","nom":"Clement Bischoff","poste":"AG","age":"19","nat":"Danois","club":"Salzburg","vm_add":"3.5","vm":"5","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/clement-bischoff/profil/spieler/953893","style":"","notes":"","pied":""},{"id":"vb1t683u","nom":"Oskar Spiten-Nysæter","poste":"AG","age":"17","nat":"Norvégien","club":"Stabæk","vm_add":"2.7","vm":"4.5","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/oskar-spiten-nysaeter/profil/spieler/1007817","style":"2.5★","notes":"","pied":""},{"id":"zuje8ncb","nom":"Estêvão","poste":"AD","age":"17","nat":"Brésilien","club":"Palmeiras","vm_add":"10","vm":"80","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/estevao/profil/spieler/1056993","style":"5★","notes":"","pied":""},{"id":"q61j1wfi","nom":"Ibrahim Mbaye","poste":"AD","age":"16","nat":"Sénégalais","club":"PSG","vm_add":"0","vm":"30","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/ibrahim-mbaye/profil/spieler/1185888","style":"3.5★","notes":"","pied":""},{"id":"0umkrypl","nom":"Roony Bardghji","poste":"AD","age":"18","nat":"Suédois","club":"FC Copenhague","vm_add":"9","vm":"15","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/roony-bardghji/profil/spieler/792331","style":"4★","notes":"","pied":""},{"id":"hv4a8hek","nom":"Adam Daghim","poste":"AD","age":"19","nat":"Danois","club":"Salzburg","vm_add":"2","vm":"7.5","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/adam-daghim/profil/spieler/881297","style":"3★","notes":"","pied":""},{"id":"7p3030f2","nom":"Geovany Quenda","poste":"AD","age":"17","nat":"Portugais","club":"Sporting","vm_add":"15","vm":"42","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/geovany-quenda/profil/spieler/1138758","style":"5★","notes":"","pied":""},{"id":"t7dsxxqb","nom":"Edwin Quintero","poste":"AD","age":"15","nat":"Équatorien","club":"Independiente Del Valle","vm_add":"0","vm":"0","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/edwin-quintero/profil/spieler/1257387","style":"4★","notes":"","pied":""},{"id":"4xkb7ezd","nom":"Min-hyeok Yang","poste":"AD","age":"18","nat":"Sud-Coréen","club":"Jeonbuk","vm_add":"3.5","vm":"3","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/min-hyeok-yang/profil/spieler/1004327","style":"4★","notes":"","pied":""},{"id":"819fg77h","nom":"Sindre Walle Egeli","poste":"AD","age":"18","nat":"Norvégien","club":"Nordsjaelland","vm_add":"7","vm":"18","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/sindre-walle-egeli/profil/spieler/923504","style":"3★","notes":"","pied":""},{"id":"1ubtrfe2","nom":"Rayan","poste":"AD","age":"18","nat":"Brésilien","club":"Vasco De Gama","vm_add":"10","vm":"40","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/rayan/profil/spieler/1012564","style":"1.5★","notes":"","pied":""},{"id":"gc047ejf","nom":"Keny Arroyo","poste":"AD","age":"18","nat":"Équatorien","club":"Independiente Del Valle","vm_add":"4","vm":"9","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/keny-arroyo/profil/spieler/1074584","style":"3.5★","notes":"","pied":""},{"id":"e61yals6","nom":"Jones El-Abdellaoui","poste":"AD","age":"19","nat":"Norvégien","club":"Celta Vigo","vm_add":"2.3","vm":"8","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/jones-el-abdellaoui/profil/spieler/960571","style":"2.5★","notes":"","pied":""},{"id":"wa88euef","nom":"Bruno Durdov","poste":"AD","age":"17","nat":"Croate","club":"Hajduk Split","vm_add":"3.5","vm":"3","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/bruno-durdov/profil/spieler/1172620","style":"","notes":"","pied":""},{"id":"l0a99g0z","nom":"Oskar Sivertsen","poste":"AD","age":"20","nat":"Norvégien","club":"Kristiansund BK","vm_add":"1.5","vm":"0.5","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/oskar-sivertsen/profil/spieler/715510","style":"","notes":"","pied":""},{"id":"iknw5gsx","nom":"Marius Broholm","poste":"AD","age":"20","nat":"Norvégien","club":"Rosenborg","vm_add":"4.5","vm":"6","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/marius-broholm/profil/spieler/903359","style":"","notes":"","pied":""},{"id":"6bakt1ld","nom":"Chemsdine Talbi","poste":"AD","age":"19","nat":"Marocain","club":"Club Bruges","vm_add":"3","vm":"25","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/chemsdine-talbi/profil/spieler/743384","style":"3★","notes":"","pied":""},{"id":"txm39kgc","nom":"Andrija Maksimovic","poste":"AD","age":"17","nat":"Serbe","club":"Etoile Rouge","vm_add":"10","vm":"12","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/andrija-maksimovic/profil/spieler/952779","style":"4★","notes":"","pied":""},{"id":"qr92rd7p","nom":"Kendry Paez","poste":"MOC","age":"17","nat":"Équatorien","club":"Independiente Del Valle","vm_add":"10","vm":"9","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/kendry-paez/profil/spieler/1052439","style":"5★","notes":"","pied":""},{"id":"jld1xifw","nom":"Désiré Doué","poste":"MOC","age":"19","nat":"Français","club":"Rennes","vm_add":"15","vm":"90","date":"2025-01-09","style":"5★","notes":"","tm_url":"https://www.transfermarkt.fr/desire-doue/profil/spieler/914562","pied":""},{"id":"ihui8mua","nom":"Ethan Nwaneri","poste":"MOC","age":"17","nat":"Anglais","club":"Arsenal","vm_add":"8","vm":"40","date":"2025-01-09","tm_url":"http://transfermarkt.fr/ethan-nwaneri/profil/spieler/890719","style":"5★","notes":"","pied":""},{"id":"k8tcu21p","nom":"Konstantinos Karetsas","poste":"MOC","age":"17","nat":"Grec","club":"Genk","vm_add":"4","vm":"35","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/konstantinos-karetsas/profil/spieler/990148","style":"4.5★","notes":"","pied":""},{"id":"mkzpbuhp","nom":"Rodrigo Mora","poste":"MOC","age":"17","nat":"Portugais","club":"Porto","vm_add":"3","vm":"38","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/rodrigo-mora/profil/spieler/957653","style":"5★","notes":"","pied":""},{"id":"2sr4yfzm","nom":"Claudio Echeverri","poste":"MOC","age":"19","nat":"Argentin","club":"Man City","vm_add":"18","vm":"15","date":"2025-01-09","style":"5★","notes":"","tm_url":"https://www.transfermarkt.fr/claudio-echeverri/profil/spieler/940706","pied":""},{"id":"p7f8i9cj","nom":"Franco Mastantuono","poste":"MOC","age":"17","nat":"Argentin","club":"River Plate","vm_add":"10","vm":"45","date":"2025-01-09","style":"5★","notes":"","tm_url":"https://www.transfermarkt.fr/franco-mastantuono/profil/spieler/1028945","pied":""},{"id":"ipor9isa","nom":"Noah Darvich","poste":"MOC","age":"17","nat":"Allemand","club":"Barcelone","vm_add":"2.5","vm":"3","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/noah-darvich/profil/spieler/897480","style":"3★","notes":"","pied":""},{"id":"grtvjppy","nom":"Simone Pafundi","poste":"MOC","age":"18","nat":"Italien","club":"Udinese","vm_add":"8","vm":"5","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/simone-pafundi/profil/spieler/876400","style":"","notes":"","pied":""},{"id":"l8hn4r9a","nom":"Aleksey Batrakov","poste":"MOC","age":"19","nat":"Russe","club":"Lokomotiv Moscou","vm_add":"8","vm":"25","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/aleksey-batrakov/profil/spieler/720286","style":"3★","notes":"","pied":""},{"id":"2ahc940j","nom":"Can Uzun","poste":"MOC","age":"19","nat":"Turc","club":"Francfort","vm_add":"12","vm":"45","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/can-uzun/profil/spieler/816585","style":"","notes":"","pied":""},{"id":"wwwfr6ff","nom":"Gilberto Mora","poste":"MOC","age":"16","nat":"Méxicain","club":"Club Tijuana","vm_add":"2","vm":"10","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/gilberto-mora/profil/spieler/1155723","style":"4★","notes":"","pied":""},{"id":"u97xbz7m","nom":"Matías Acevedo","poste":"MOC","age":"16","nat":"Argentin","club":"Racing Club","vm_add":"0","vm":"0","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/matias-acevedo/profil/spieler/1241457","style":"3★","notes":"","pied":""},{"id":"mqeho7r2","nom":"Sebastian Olderheim","poste":"MOC","age":"17","nat":"Norvégien","club":"Stabæk","vm_add":"2.5","vm":"2.5","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/sebastian-olderheim/profil/spieler/1007813","style":"","notes":"","pied":""},{"id":"flqqn3ee","nom":"Lorran","poste":"MOC","age":"18","nat":"Brésilien","club":"Flamengo","vm_add":"12","vm":"6","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/lorran/profil/spieler/1009030","style":"","notes":"","pied":""},{"id":"hnvusk6g","nom":"Mario Stroeykens","poste":"MOC","age":"20","nat":"Belge","club":"Anderlecht","vm_add":"14","vm":"6","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/mario-stroeykens/profil/spieler/588866","style":"","notes":"","pied":""},{"id":"dxlp2stg","nom":"Lucá Williams-Barnett","poste":"MOC","age":"16","nat":"Anglais","club":"Tottenham","vm_add":"0","vm":"0","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/luca-williams-barnett/profil/spieler/1108475","style":"4.5★","notes":"","pied":""},{"id":"2kmqzzvg","nom":"Max Dowman","poste":"MOC","age":"15","nat":"Anglais","club":"Arsenal","vm_add":"0","vm":"20","date":"2025-01-09","style":"5★","notes":"","tm_url":"https://www.transfermarkt.fr/max-dowman/profil/spieler/1060613","pied":""},{"id":"7wck2jqt","nom":"Divine Mukasa","poste":"MOC","age":"17","nat":"Anglais","club":"Man City","vm_add":"0","vm":"5","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/divine-mukasa/profil/spieler/1047280","style":"","notes":"","pied":""},{"id":"osezv07d","nom":"Harry Howell","poste":"MOC","age":"16","nat":"Anglais","club":"Brighton","vm_add":"0","vm":"8","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/harry-howell/profil/spieler/1067168","style":"","notes":"","pied":""},{"id":"lmwmv5zv","nom":"Mattia Liberali","poste":"MOC","age":"17","nat":"Italien","club":"AC Milan","vm_add":"5","vm":"7","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/mattia-liberali/profil/spieler/988964","style":"","notes":"","pied":""},{"id":"gjbixe5w","nom":"Tiago Rodrigues","poste":"MOC","age":"15","nat":"Portugais","club":"Benfica","vm_add":"0","vm":"0","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/tiago-rodrigues/profil/spieler/1210904","style":"","notes":"","pied":""},{"id":"u5r823wo","nom":"Ibrahim Rabbaj","poste":"MOC","age":"16","nat":"Marocain","club":"Chelsea","vm_add":"0","vm":"0","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/ibrahim-rabbaj/profil/spieler/1249073","style":"","notes":"","pied":""},{"id":"dhx22pny","nom":"Sem Steijn","poste":"MOC","age":"23","nat":"Néerlandais","club":"Twente","vm_add":"10","vm":"11","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/sem-steijn/profil/spieler/593519","style":"2.5★","notes":"","pied":""},{"id":"qd799r62","nom":"Kobbie Mainoo","poste":"MC","age":"18","nat":"Anglais","club":"Man United","vm_add":"6","vm":"50","date":"2025-01-09","style":"5★","notes":"","tm_url":"https://www.transfermarkt.fr/kobbie-mainoo/profil/spieler/982247","pied":""},{"id":"3mn0qi00","nom":"Lucas Bergvall","poste":"MC","age":"18","nat":"Suédois","club":"Djurgården","vm_add":"10","vm":"40","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/lucas-bergvall/profil/spieler/866246","style":"5★","notes":"","pied":""},{"id":"kp6f2x94","nom":"Sverre Nypan","poste":"MC","age":"18","nat":"Norvégien","club":"Rosenborg","vm_add":"9","vm":"15","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/sverre-nypan/profil/spieler/911736","style":"5★","notes":"","pied":""},{"id":"o3zm5dgd","nom":"Ayman Kari","poste":"MC","age":"19","nat":"Français","club":"PSG","vm_add":"0.9","vm":"0.9","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/ayman-kari/profil/spieler/810093","style":"1★","notes":"","pied":""},{"id":"ra1rvhql","nom":"Kees Smit","poste":"MC","age":"19","nat":"Néerlandais","club":"AZ Alkmaar","vm_add":"5","vm":"25","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/kees-smit/profil/spieler/859035","style":"5★","notes":"","pied":""},{"id":"wr05da3q","nom":"Justin Lerma","poste":"MC","age":"16","nat":"Équatorien","club":"Independiente Del Valle","vm_add":"3","vm":"3","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/justin-lerma/profil/spieler/1185507","style":"3.5★","notes":"","pied":""},{"id":"h972at1s","nom":"Noah Sadiki","poste":"MC","age":"20","nat":"Congolais","club":"Union SG","vm_add":"8","vm":"30","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/noah-sadiki/profil/spieler/727089","style":"2.5★","notes":"","pied":""},{"id":"ayp7qjxi","nom":"Ngal'ayel Mukau","poste":"MC","age":"20","nat":"Congolais","club":"Lille","vm_add":"10","vm":"12","date":"2025-03-12","tm_url":"https://www.transfermarkt.fr/ngalayel-mukau/profil/spieler/1016015","style":"3★","notes":"","pied":""},{"id":"vn6opvf1","nom":"Chris Rigg","poste":"MC","age":"17","nat":"Anglais","club":"Sunderland","vm_add":"12","vm":"25","date":"2025-01-09","style":"4★","notes":"","tm_url":"https://www.transfermarkt.fr/chris-rigg/profil/spieler/981459","pied":""},{"id":"zxm6t3i3","nom":"Christos Mouzakitis","poste":"MC","age":"18","nat":"Grec","club":"Olympiakos","vm_add":"3","vm":"25","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/christos-mouzakitis/profil/spieler/964426","style":"","notes":"","pied":""},{"id":"u668li26","nom":"Matias Siltanen","poste":"MC","age":"17","nat":"Finlandais","club":"Djurgården","vm_add":"0.8","vm":"3.5","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/matias-siltanen/profil/spieler/1018035","style":"","notes":"","pied":""},{"id":"5f73f6ja","nom":"Ezechiel Banzuzi","poste":"MC","age":"19","nat":"Néerlandais","club":"OH Leuven","vm_add":"5","vm":"18","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/ezechiel-banzuzi/profil/spieler/865682","style":"","notes":"","pied":""},{"id":"z09ucca9","nom":"Federico Coletta","poste":"MC","age":"17","nat":"Italien","club":"Roma","vm_add":"0","vm":"1","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/federico-coletta/profil/spieler/1008569","style":"3★","notes":"","pied":""},{"id":"xcint6dl","nom":"João Simões","poste":"MC","age":"18","nat":"Portugais","club":"Sporting","vm_add":"2.5","vm":"15","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/joao-simoes/profil/spieler/958937","style":"","notes":"","pied":""},{"id":"cb832fx0","nom":"Guille Fernández","poste":"MC","age":"16","nat":"Espagnol","club":"Barcelone","vm_add":"0.5","vm":"3","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/guille-fernandez/profil/spieler/1050120","style":"","notes":"","pied":""},{"id":"9ujl4vsc","nom":"Valentin Atangana","poste":"MC","age":"19","nat":"Français","club":"Reims","vm_add":"9","vm":"18","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/valentin-atangana/profil/spieler/923759","style":"","notes":"","pied":""},{"id":"8ki2bmxc","nom":"Christian Ordóñez","poste":"MC","age":"20","nat":"Argentin","club":"Vélez Sarsfield","vm_add":"7","vm":"6.5","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/christian-ordonez/profil/spieler/1043646","style":"2.5★","notes":"","pied":""},{"id":"mm326n8x","nom":"Jobe Bellingham","poste":"MC","age":"19","nat":"Anglais","club":"Sunderland","vm_add":"18","vm":"25","date":"2025-01-09","style":"5★","notes":"","tm_url":"https://www.transfermarkt.fr/jobe-bellingham/profil/spieler/935614","pied":""},{"id":"rs90u5cw","nom":"Andrija Bulatovic","poste":"MC","age":"17","nat":"Monténégrin","club":"RC Lens","vm_add":"0.4","vm":"5","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/andrija-bulatovic/profil/spieler/986291","style":"2★","notes":"Mis après rumeur Lens","pied":""},{"id":"o2qhkqbo","nom":"Abdellah Ouazane","poste":"MC","age":"16","nat":"Marocain","club":"Ajax","vm_add":"0","vm":"1","date":"2025-01-27","tm_url":"https://www.transfermarkt.fr/abdellah-ouazane/profil/spieler/1194905","style":"","notes":"","pied":""},{"id":"ut2odae0","nom":"Dominik Pech","poste":"MC","age":"18","nat":"Tchèque","club":"Slavia Prague","vm_add":"0.8","vm":"2","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/dominik-pech/profil/spieler/1066142","style":"2.5★","notes":"","pied":""},{"id":"u3d2b8gm","nom":"Marc Bernal","poste":"MDC","age":"17","nat":"Espagnol","club":"Barcelone","vm_add":"1","vm":"30","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/marc-bernal/profil/spieler/1018920","style":"4★","notes":"","pied":""},{"id":"g0zzbow7","nom":"Archie Gray","poste":"MDC","age":"18","nat":"Anglais","club":"Leeds","vm_add":"18","vm":"35","date":"2025-01-09","style":"5★","notes":"","tm_url":"https://www.transfermarkt.fr/archie-gray/profil/spieler/981657","pied":""},{"id":"ll40wjti","nom":"Dario Essugo","poste":"MDC","age":"19","nat":"Portugais","club":"Sporting","vm_add":"3","vm":"17","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/dario-essugo/profil/spieler/670717","style":"4★","notes":"","pied":""},{"id":"agl59dsl","nom":"Ayyoub Bouaddi","poste":"MDC","age":"17","nat":"Français","club":"Lille","vm_add":"10","vm":"50","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/ayyoub-bouaddi/profil/spieler/1097139","style":"5★","notes":"","pied":""},{"id":"agwtej5c","nom":"Lamine Camara","poste":"MDC","age":"20","nat":"Sénégalais","club":"Monaco","vm_add":"10","vm":"35","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/lamine-camara/profil/spieler/918969","style":"4★","notes":"","pied":""},{"id":"xxwv4rrl","nom":"Andrey Santos","poste":"MDC","age":"19","nat":"Brésilien","club":"Strasbourg","vm_add":"15","vm":"45","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/andrey-santos/profil/spieler/743600","style":"5★","notes":"","pied":""},{"id":"h2j791ai","nom":"Máximo Perrone","poste":"MDC","age":"22","nat":"Argentin","club":"Como","vm_add":"9","vm":"30","date":"2025-01-09","style":"3.5★","notes":"","tm_url":"https://www.transfermarkt.fr/maximo-perrone/profil/spieler/845184","pied":""},{"id":"iyqznra5","nom":"Lennon Miller","poste":"MDC","age":"18","nat":"Écossais","club":"Motherwell","vm_add":"4","vm":"10","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/lennon-miller/profil/spieler/924857","style":"4.5★","notes":"","pied":""},{"id":"uw5unnjm","nom":"Boris Mamuzah Lum","poste":"MDC","age":"17","nat":"Allemand","club":"Herta Berlin","vm_add":"0.5","vm":"1","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/boris-mamuzah-lum/profil/spieler/1067659","style":"2★","notes":"","pied":""},{"id":"scqk84ll","nom":"Jorthy Mokio","poste":"MDC","age":"16","nat":"Belge","club":"Ajax","vm_add":"1.5","vm":"8","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/jorthy-mokio/profil/spieler/1105532","style":"4.5★","notes":"","pied":""},{"id":"31e3gkbd","nom":"Nathan De Cat","poste":"MDC","age":"16","nat":"Belge","club":"Anderlecht","vm_add":"1","vm":"25","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/nathan-de-cat/profil/spieler/1105541","style":"4★","notes":"","pied":""},{"id":"29n84t0m","nom":"Abdoulaye Camara","poste":"MDC","age":"16","nat":"Français","club":"Montpellier","vm_add":"0","vm":"1.5","date":"2025-03-01","tm_url":"https://www.transfermarkt.fr/abdoulaye-camara/profil/spieler/1210116","style":"2★","notes":"","pied":""},{"id":"z1nv1hxa","nom":"Mathis Amougou","poste":"MDC","age":"18","nat":"Français","club":"Saint-Etienne","vm_add":"5","vm":"10","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/mathis-amougou/profil/spieler/1010854","style":"3.5★","notes":"","pied":""},{"id":"625esebj","nom":"Adam Aznou","poste":"DG","age":"17","nat":"Marocain","club":"Bayern Munich","vm_add":"1.5","vm":"7","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/adam-aznou/profil/spieler/938146","style":"5★","notes":"","pied":""},{"id":"zqdxr8dm","nom":"Yaimar Medina","poste":"DG","age":"20","nat":"Équatorien","club":"Independiente Del Valle","vm_add":"3.5","vm":"4","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/yaimar-medina/profil/spieler/893659","style":"3★","notes":"","pied":""},{"id":"mbtdarnn","nom":"Álvaro Carreras","poste":"DG","age":"18","nat":"Espagnol","club":"Benfica","vm_add":"18","vm":"60","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/alvaro-carreras/profil/spieler/811778","style":"3.5★","notes":"","pied":""},{"id":"xp9cww4b","nom":"Diego León","poste":"DG","age":"17","nat":"Paraguayen","club":"Man United","vm_add":"4","vm":"4","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/diego-leon/profil/spieler/1283997","style":"","notes":"Mis après rumeur Man U","pied":""},{"id":"k4x1ox2d","nom":"Jhoan Hernández","poste":"DG","age":"18","nat":"Colombien","club":"Millonarios","vm_add":"0.35","vm":"0.15","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/jhoan-hernandez/profil/spieler/1112486","style":"","notes":"","pied":""},{"id":"iwakm98k","nom":"Michal Gurgul","poste":"DG","age":"18","nat":"Polonais","club":"Lech Poznan","vm_add":"3.5","vm":"3","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/michal-gurgul/profil/spieler/991779","style":"","notes":"","pied":""},{"id":"oftsrsa1","nom":"Valentín Barco","poste":"DG","age":"20","nat":"Argentin","club":"Brighton","vm_add":"6","vm":"35","date":"2025-01-09","style":"3.5★","notes":"","tm_url":"https://www.transfermarkt.fr/valentin-barco/profil/spieler/870469","pied":""},{"id":"54sf1x7h","nom":"Peyton Miller","poste":"DG","age":"17","nat":"Américain","club":"New England","vm_add":"0.15","vm":"3","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/peyton-miller/profil/spieler/1016918","style":"2★","notes":"","pied":""},{"id":"5t47ybm4","nom":"Ilya Rozhkov","poste":"DG","age":"19","nat":"Russe","club":"Rubin Kazan","vm_add":"2","vm":"5","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/ilya-rozhkov/profil/spieler/700385","style":"","notes":"","pied":""},{"id":"eda57fqz","nom":"Maxim De Cuyper","poste":"DG","age":"23","nat":"Belge","club":"Club Bruges","vm_add":"12","vm":"22","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/maxim-de-cuyper/profil/spieler/429915","style":"3.5★","notes":"","pied":""},{"id":"bnk1nev8","nom":"Myles Lewis-Skelly","poste":"DG","age":"18","nat":"Anglais","club":"Arsenal","vm_add":"10","vm":"40","date":"2025-01-09","style":"4★","notes":"","tm_url":"https://www.transfermarkt.fr/myles-lewis-skelly/profil/spieler/1003097","pied":""},{"id":"znr5e9qq","nom":"Matteo Pérez Vinlöf","poste":"DG","age":"19","nat":"Suédois","club":"Austria Vienne","vm_add":"1","vm":"2.5","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/matteo-perez-vinlof/profil/spieler/920283","style":"","notes":"","pied":""},{"id":"ukb815u5","nom":"Julio Soler","poste":"DG","age":"19","nat":"Argentin","club":"Bournemouth","vm_add":"8","vm":"8","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/julio-soler/profil/spieler/1009658","style":"3★","notes":"","pied":""},{"id":"3hiis40e","nom":"Tiago Santos","poste":"DD","age":"21","nat":"Portugais","club":"Lille","vm_add":"8","vm":"12","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/tiago-santos/profil/spieler/816580","style":"4★","notes":"","pied":""},{"id":"nrzk1gx1","nom":"Amar Dedic","poste":"DD","age":"21","nat":"Bosnien","club":"Salzburg","vm_add":"20","vm":"15","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/amar-dedic/profil/spieler/519184","style":"5★","notes":"","pied":""},{"id":"mo087ey7","nom":"Ivan Fresneda","poste":"DD","age":"19","nat":"Espagnol","club":"Sporting","vm_add":"7","vm":"12","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/ivan-fresneda/profil/spieler/946883","style":"3.5★","notes":"","pied":""},{"id":"rhhidk45","nom":"Conor Bradley","poste":"DD","age":"20","nat":"Nord-Irlandais","club":"Liverpool","vm_add":"20","vm":"30","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/conor-bradley/profil/spieler/624258","style":"4★","notes":"","pied":""},{"id":"syr8lp42","nom":"Martim Fernandes","poste":"DD","age":"18","nat":"Portugais","club":"Porto","vm_add":"8","vm":"12","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/martim-fernandes/profil/spieler/935480","style":"","notes":"","pied":""},{"id":"0gzb1qyc","nom":"Michael Kayode","poste":"DD","age":"20","nat":"Italien","club":"Fiorentina","vm_add":"18","vm":"35","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/michael-kayode/profil/spieler/823486","style":"4★","notes":"","pied":""},{"id":"f1hzrn22","nom":"Devyne Rensch","poste":"DD","age":"21","nat":"Néerlandais","club":"Ajax","vm_add":"12","vm":"8.5","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/devyne-rensch/profil/spieler/557407","style":"","notes":"","pied":""},{"id":"9qdhmnf9","nom":"Wesley","poste":"DD","age":"21","nat":"Brésilien","club":"Flamengo","vm_add":"9","vm":"40","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/wesley/profil/spieler/964580","style":"","notes":"","pied":""},{"id":"vrfyrd7f","nom":"Kosta Nedeljkovic","poste":"DD","age":"19","nat":"Serbe","club":"Aston Villa","vm_add":"8.5","vm":"6","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/kosta-nedeljkovic/profil/spieler/848682","style":"","notes":"","pied":""},{"id":"sd6jh1cn","nom":"Pedro Lima","poste":"DD","age":"18","nat":"Brésilien","club":"Wolverhampton","vm_add":"5","vm":"4","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/pedro-lima/profil/spieler/1193867","style":"","notes":"","pied":""},{"id":"o8z8851c","nom":"Josh Acheampong","poste":"DD","age":"18","nat":"Anglais","club":"Chelsea","vm_add":"1","vm":"20","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/josh-acheampong/profil/spieler/1004708","style":"","notes":"","pied":""},{"id":"ui34brgg","nom":"Givairo Read","poste":"DD","age":"18","nat":"Néerlandais","club":"Feyenoord","vm_add":"4","vm":"25","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/givairo-read/profil/spieler/997903","style":"","notes":"","pied":""},{"id":"gz106mhl","nom":"Alberto Costa","poste":"DD","age":"21","nat":"Portugais","club":"Juventus","vm_add":"1","vm":"15","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/alberto-costa/profil/spieler/877139","style":"4★","notes":"Mis après rumeurs Juve","pied":""},{"id":"pu4cnyq0","nom":"David Boly","poste":"DD","age":"15","nat":"Français","club":"PSG","vm_add":"0","vm":"0","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/david-boly/profil/spieler/1193405","style":"5★","notes":"","pied":""},{"id":"0thza297","nom":"Jorrel Hato","poste":"DC","age":"18","nat":"Néerlandais","club":"Ajax","vm_add":"20","vm":"35","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/jorrel-hato/profil/spieler/904802","style":"5★","notes":"","pied":""},{"id":"9tpwhe98","nom":"Joane Gadou","poste":"DC","age":"18","nat":"Français","club":"PSG","vm_add":"0.5","vm":"12","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/joane-gadou/profil/spieler/1075577","style":"","notes":"","pied":""},{"id":"uta1wy66","nom":"Luka Vuskovic","poste":"DC","age":"17","nat":"Croate","club":"Westerlo","vm_add":"8","vm":"60","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/luka-vuskovic/profil/spieler/892160","style":"5★","notes":"","pied":""},{"id":"z6jvhkxg","nom":"Abdukodir Khusanov","poste":"DC","age":"20","nat":"Ouzbek","club":"Lens","vm_add":"12","vm":"35","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/abdukodir-khusanov/profil/spieler/763079","style":"4★","notes":"","pied":""},{"id":"uyj7if33","nom":"Renato Veiga","poste":"DC","age":"21","nat":"Portugais","club":"Chelsea","vm_add":"10","vm":"25","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/renato-veiga/profil/spieler/805714","style":"3.5★","notes":"","pied":""},{"id":"kvqfm1pq","nom":"Deinner Ordóñez","poste":"DC","age":"15","nat":"Équatorien","club":"Independiente Del Valle","vm_add":"0","vm":"0","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/deinner-ordonez/profil/spieler/1257398","style":"4★","notes":"","pied":""},{"id":"009uwy7e","nom":"Joel Ordóñez","poste":"DC","age":"19","nat":"Équatorien","club":"Club Bruges","vm_add":"18","vm":"33","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/joel-ordonez/profil/spieler/893661","style":"3.5★","notes":"","pied":""},{"id":"ppn9w27v","nom":"Jan-Carlo Simić","poste":"DC","age":"19","nat":"Serbe","club":"Anderlecht","vm_add":"7","vm":"12","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/jan-carlo-simic/profil/spieler/800948","style":"2★","notes":"","pied":""},{"id":"wupafmbe","nom":"Vitor Reis","poste":"DC","age":"18","nat":"Brésilien","club":"Man City","vm_add":"14","vm":"30","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/vitor-reis/profil/spieler/1005575","style":"5★","notes":"Mis après rumeur City","pied":""},{"id":"pit5gcxp","nom":"Iván Román","poste":"DC","age":"18","nat":"Chilien","club":"Palestino","vm_add":"1.5","vm":"1.5","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/ivan-roman/profil/spieler/1101447","style":"3.5★","notes":"","pied":""},{"id":"qfn5ix4u","nom":"Tobías Ramírez","poste":"DC","age":"18","nat":"Argentin","club":"AA Argentinos Juniors","vm_add":"4.5","vm":"2.5","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/tobias-ramirez/profil/spieler/1000684","style":"5★","notes":"","pied":""},{"id":"kbf1shy9","nom":"Juan Giménez","poste":"DC","age":"18","nat":"Argentin","club":"Rosario Central","vm_add":"2.5","vm":"2","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/juan-gimenez/profil/spieler/1000686","style":"4.5★","notes":"","pied":""},{"id":"vl2hw4in","nom":"Yasin Özcan","poste":"DC","age":"18","nat":"Turc","club":"Kasimpasa","vm_add":"4.5","vm":"5","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/yasin-ozcan/profil/spieler/1043003","style":"","notes":"","pied":""},{"id":"73m4xq0h","nom":"Pietro Comuzzo","poste":"DC","age":"19","nat":"Italien","club":"Fiorentina","vm_add":"15","vm":"23","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/pietro-comuzzo/profil/spieler/746712","style":"","notes":"","pied":""},{"id":"hhsox95y","nom":"Dean Huijsen","poste":"DC","age":"19","nat":"Espagnol","club":"Bournemouth","vm_add":"18","vm":"65","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/dean-huijsen/profil/spieler/890290","style":"4.5★","notes":"","pied":""},{"id":"brk8k3ch","nom":"Taras Mykhavko","poste":"DC","age":"19","nat":"Ukrainien","club":"Dynamo Kyiv","vm_add":"3","vm":"9","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/taras-mykhavko/profil/spieler/1067225","style":"","notes":"","pied":""},{"id":"izzt9az3","nom":"Josue Kongolo","poste":"DC","age":"18","nat":"Belge","club":"Genk","vm_add":"1","vm":"2.5","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/josue-kongolo/profil/spieler/997474","style":"","notes":"","pied":""},{"id":"9ciq50z6","nom":"Ryan Flamingo","poste":"DC","age":"22","nat":"Néerlandais","club":"PSV","vm_add":"16","vm":"14","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/ryan-flamingo/profil/spieler/586429","style":"4★","notes":"","pied":""},{"id":"1bdmzd68","nom":"Mamadou Sarr","poste":"DC","age":"19","nat":"Sénégalais","club":"Strasbourg","vm_add":"8","vm":"25","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/mamadou-sarr/profil/spieler/910905","style":"4.5★","notes":"","pied":""},{"id":"b06ygg7e","nom":"Andrea Natali","poste":"DC","age":"16","nat":"Italien","club":"Leverkusen","vm_add":"0","vm":"0.4","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/andrea-natali/profil/spieler/1058353","style":"","notes":"","pied":""},{"id":"mbl876f6","nom":"Giovanni Leoni","poste":"DC","age":"18","nat":"Italien","club":"Parma","vm_add":"4.5","vm":"25","date":"2025-01-09","tm_url":"https://www.transfermarkt.fr/giovanni-leoni/profil/spieler/1086619","style":"4.5★","notes":"","pied":""},{"id":"kget1dom","nom":"Nidal Celik","poste":"DC","age":"18","nat":"Bosnien","club":"RC Lens","vm_add":"1","vm":"4","date":"2025-02-03","tm_url":"https://www.transfermarkt.fr/nidal-celik/profil/spieler/819566","style":"","notes":"Mis après rumeur Lens","pied":""},{"id":"aowffbdg","nom":"Dastan Satpaev","poste":"BU","age":"16","nat":"Kazakh","club":"Kairat Almaty","vm_add":"1.8","vm":"3","date":"2025-07-29","tm_url":"https://www.transfermarkt.fr/dastan-satpaev/profil/spieler/1179146","style":"3.5★","notes":"","pied":""},{"id":"vimt131x","nom":"Artem Stepanov","poste":"BU","age":"17","nat":"Ukrainien","club":"Leverkusen","vm_add":"1.8","vm":"1.5","date":"2025-08-02","tm_url":"https://www.transfermarkt.fr/artem-stepanov/profil/spieler/1045344","style":"","notes":"","pied":""},{"id":"3exva1d1","nom":"Alejandro Gomes Rodríguez","poste":"BU","age":"17","nat":"Anglais","club":"Lyon","vm_add":"0.1","vm":"0.5","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/alejandro-gomes-rodriguez/profil/spieler/1108478","style":"3★","notes":"","pied":""},{"id":"rto431hm","nom":"Christ Batola","poste":"BU","age":"16","nat":"Français","club":"Troyes","vm_add":"0","vm":"0","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/christ-batola/profil/spieler/1337539","style":"","notes":"","pied":""},{"id":"6b4cs2bl","nom":"Hamza Igamane","poste":"BU","age":"22","nat":"Marocain","club":"Lille","vm_add":"7","vm":"18","date":"2025-09-13","tm_url":"https://www.transfermarkt.fr/hamza-igamane/profil/spieler/885445","style":"3.5★","notes":"","pied":""},{"id":"51b5bib5","nom":"Bogdan Popov","poste":"BU","age":"18","nat":"Ukrainien","club":"Empoli","vm_add":"3","vm":"3","date":"2025-10-30","tm_url":"https://www.transfermarkt.fr/bogdan-popov/profil/spieler/1198243","style":"","notes":"","pied":""},{"id":"3t0egc76","nom":"Kader Meïté","poste":"BU","age":"18","nat":"Ivoirien","club":"Rennes","vm_add":"8","vm":"18","date":"2025-11-02","tm_url":"https://www.transfermarkt.fr/kader-meite/profil/spieler/1141560","style":"4★","notes":"","pied":""},{"id":"bzh1qg9f","nom":"Alexander Staff","poste":"BU","age":"17","nat":"Allemand","club":"Francfort","vm_add":"0.35","vm":"1","date":"2025-11-02","tm_url":"https://www.transfermarkt.fr/alexander-staff/profil/spieler/1045243","style":"4★","notes":"","pied":""},{"id":"lq2dewvj","nom":"Andrej Kostic","poste":"BU","age":"18","nat":"Monténégrin","club":"Partizan Belgrad","vm_add":"2.5","vm":"5","date":"2025-11-04","tm_url":"https://www.transfermarkt.fr/andrej-kostic/profil/spieler/987672","style":"1.5★","notes":"","pied":""},{"id":"sjxxr3tm","nom":"Mikkel Bro Hansen","poste":"BU","age":"16","nat":"Danois","club":"Bodo Glimt","vm_add":"0.8","vm":"0.8","date":"2025-11-06","tm_url":"https://www.transfermarkt.fr/mikkel-bro-hansen/profil/spieler/1189915","style":"","notes":"","pied":""},{"id":"fa035f34","nom":"Robinio Vaz","poste":"BU","age":"18","nat":"Français","club":"Olympique de Marseille","vm_add":"4","vm":"18","date":"2025-11-06","tm_url":"https://www.transfermarkt.fr/robinio-vaz/profil/spieler/1131161","style":"3.5★","notes":"","pied":""},{"id":"voaq0l3n","nom":"Anísio Cabral","poste":"BU","age":"17","nat":"Portugais","club":"Benfica","vm_add":"0","vm":"5","date":"2026-01-06","tm_url":"https://www.transfermarkt.fr/anisio-cabral/profil/spieler/1092964","style":"5★","notes":"","pied":""},{"id":"davsusuh","nom":"Rio Ngumoha","poste":"AG","age":"16","nat":"Anglais","club":"Liverpool","vm_add":"0","vm":"15","date":"2025-07-31","style":"5★","notes":"","tm_url":"https://www.transfermarkt.fr/rio-ngumoha/profil/spieler/1060612","pied":""},{"id":"kk4i84ny","nom":"JJ Gabriel","poste":"AG","age":"14","nat":"Anglais","club":"Man United","vm_add":"0","vm":"0","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/jj-gabriel/profil/spieler/1376382","style":"5★ Neymar","notes":"Peut-être le meilleur joueur de l'histoire","pied":""},{"id":"1dzgmtxo","nom":"Ruben van Bommel","poste":"AG","age":"21","nat":"Néerlandais","club":"PSV","vm_add":"8","vm":"12","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/ruben-van-bommel/profil/spieler/735701","style":"4★ Barcola Bis","notes":"Se régalerait en PL","pied":""},{"id":"agy36xyb","nom":"Oskar Pietuszewski","poste":"AG","age":"17","nat":"Polonais","club":"Jagiellonia","vm_add":"2.5","vm":"20","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/oskar-pietuszewski/profil/spieler/1162012","style":"5★","notes":"","pied":""},{"id":"mseul8fk","nom":"Jeremy Monga","poste":"AG","age":"16","nat":"Anglais","club":"Leicester","vm_add":"8","vm":"10","date":"2025-10-13","tm_url":"https://www.transfermarkt.fr/jeremy-monga/profil/spieler/1245948","style":"4.5★","notes":"","pied":""},{"id":"xdbb87sr","nom":"Mathys Detourbet","poste":"AG","age":"18","nat":"Français","club":"Troyes","vm_add":"4","vm":"10","date":"2026-01-24","tm_url":"https://www.transfermarkt.fr/mathys-detourbet/profil/spieler/1171981","style":"","notes":"","pied":""},{"id":"l88m8phe","nom":"Luis Fragozo","poste":"AG","age":"15","nat":"Équatorien","club":"CS Emelec","vm_add":"0","vm":"0","date":"2026-03-23","tm_url":"https://www.transfermarkt.fr/luis-fragozo/profil/spieler/1383137","style":"","notes":"","pied":""},{"id":"qaie5z7m","nom":"Mathis Albert","poste":"AG","age":"16","nat":"Américain","club":"Borussia Dortmund","vm_add":"0","vm":"0","date":"2026-02-01","tm_url":"https://www.transfermarkt.fr/mathis-albert/profil/spieler/1193849","style":"","notes":"","pied":""},{"id":"k259ghvx","nom":"Ilies Belmokhtar","poste":"AD","age":"17","nat":"Marocain","club":"Monaco","vm_add":"0","vm":"0","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/ilies-belmokhtar/profil/spieler/1205640","style":"","notes":"","pied":""},{"id":"gsbq7scv","nom":"Gabriel Rajković","poste":"AD","age":"15","nat":"Norvégien","club":"Valerenga","vm_add":"0","vm":"0","date":"2026-03-23","tm_url":"https://www.transfermarkt.fr/gabriel-rajkovic/profil/spieler/1470255","style":"","notes":"","pied":""},{"id":"ypacvced","nom":"Ebrima Tunkara","poste":"AD","age":"16","nat":"Espagnol","club":"Barcelone","vm_add":"0","vm":"1","date":"2026-03-23","tm_url":"https://www.transfermarkt.fr/ebrima-tunkara/profil/spieler/1242159","style":"","notes":"","pied":""},{"id":"mbj68yv5","nom":"Joshua Abe","poste":"AD","age":"15","nat":"Anglais","club":"Liverpool","vm_add":"0","vm":"0","date":"2026-03-23","tm_url":"https://www.transfermarkt.fr/joshua-abe/profil/spieler/1376369","style":"","notes":"","pied":""},{"id":"lcw7b9n9","nom":"Vasilije Adžić","poste":"MOC","age":"19","nat":"Monténégrin","club":"Juventus","vm_add":"4","vm":"8","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/vasilije-adzic/profil/spieler/944570","style":"","notes":"","pied":""},{"id":"peakkpbn","nom":"Álvaro Montoro","poste":"MOC","age":"18","nat":"Argentin","club":"Botafogo","vm_add":"8","vm":"10","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/alvaro-montoro/profil/spieler/1228194","style":"","notes":"","pied":""},{"id":"ao1hl4jb","nom":"Francis Onyeka","poste":"MOC","age":"18","nat":"Allemand","club":"Bochum","vm_add":"6","vm":"10","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/francis-onyeka/profil/spieler/929943","style":"4★","notes":"","pied":""},{"id":"2hv7uujf","nom":"Ensar Music","poste":"MOC","age":"18","nat":"Autrichien","club":"Rapid Wien","vm_add":"0.25","vm":"0.25","date":"2026-01-24","tm_url":"https://www.transfermarkt.fr/ensar-music/profil/spieler/980665","style":"","notes":"","pied":""},{"id":"rg7ue2z7","nom":"David Moreno","poste":"MOC","age":"14","nat":"Espagnol","club":"Barcelone","vm_add":"0","vm":"0","date":"2026-02-11","tm_url":"https://www.transfermarkt.fr/david-moreno/profil/spieler/1527863","style":"5★","notes":"","pied":""},{"id":"hrc6v77a","nom":"Trey Nyoni","poste":"MC","age":"18","nat":"Anglais","club":"Liverpool","vm_add":"4.5","vm":"6","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/trey-nyoni/profil/spieler/1009422","style":"4.5★","notes":"","pied":""},{"id":"8tpi8uun","nom":"Khalis Merah","poste":"MC","age":"18","nat":"Français","club":"Lyon","vm_add":"0","vm":"10","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/khalis-merah/profil/spieler/1187942","style":"4★","notes":"","pied":""},{"id":"hkmu3634","nom":"Louis Leroux","poste":"MC","age":"19","nat":"Français","club":"Nantes","vm_add":"4","vm":"12","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/louis-leroux/profil/spieler/1119456","style":"","notes":"","pied":""},{"id":"2p0us4ba","nom":"Caleb Yirenkyi","poste":"MC","age":"19","nat":"Ghanéen","club":"Nordsjaelland","vm_add":"1","vm":"6","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/caleb-yirenkyi/profil/spieler/1240763","style":"","notes":"","pied":""},{"id":"k0v4yein","nom":"Alex Tóth","poste":"MC","age":"19","nat":"Hongrois","club":"Ferencváros","vm_add":"2.5","vm":"12","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/alex-toth/profil/spieler/998101","style":"","notes":"","pied":""},{"id":"v9vgrj3v","nom":"Victor Froholdt","poste":"MC","age":"19","nat":"Danois","club":"Porto","vm_add":"12","vm":"30","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/victor-froholdt/profil/spieler/926993","style":"","notes":"","pied":""},{"id":"tpu62ai2","nom":"Believe Munongo","poste":"MC","age":"15","nat":"Français","club":"FC Metz","vm_add":"0","vm":"10","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/believe-munongo/profil/spieler/1297673","style":"","notes":"","pied":""},{"id":"f9l8ndzl","nom":"Rudy Matondo","poste":"MC","age":"17","nat":"Français","club":"Auxerre","vm_add":"1.5","vm":"15","date":"2025-11-02","tm_url":"https://www.transfermarkt.fr/rudy-matondo/profil/spieler/1241211","style":"","notes":"","pied":""},{"id":"aio9oayn","nom":"Vasilije Kostov","poste":"MC","age":"17","nat":"Serbe","club":"Etoile Rouge","vm_add":"3.5","vm":"18","date":"2025-11-06","tm_url":"https://www.transfermarkt.fr/vasilije-kostov/profil/spieler/1073632","style":"","notes":"","pied":""},{"id":"bdhttjx7","nom":"Reggie Walsh","poste":"MC","age":"17","nat":"Anglais","club":"Chelsea","vm_add":"0","vm":"0.5","date":"2025-11-07","tm_url":"https://www.transfermarkt.fr/reggie-walsh/profil/spieler/1108464","style":"","notes":"","pied":""},{"id":"bxb187zp","nom":"Sean Steur","poste":"MC","age":"18","nat":"Néerlandais","club":"Ajax","vm_add":"0.7","vm":"6","date":"2026-02-01","tm_url":"https://www.transfermarkt.fr/sean-steur/profil/spieler/1111063","style":"4.5★","notes":"","pied":""},{"id":"v07mu66b","nom":"Xander Dierckx","poste":"MC","age":"16","nat":"Belge","club":"Antwerp","vm_add":"0.4","vm":"2","date":"2026-02-01","tm_url":"https://www.transfermarkt.fr/xander-dierckx/profil/spieler/1264666","style":"","notes":"","pied":""},{"id":"ra1l2h4f","nom":"Vasilije Novicic","poste":"MDC","age":"17","nat":"Serbe","club":"FK IMT Belgrad","vm_add":"1","vm":"3.5","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/mihajlo-cvetkovic/profil/spieler/897510","style":"3.5★","notes":"","pied":""},{"id":"z4iro9xy","nom":"Tyler Morton","poste":"MDC","age":"22","nat":"Anglais","club":"Lyon","vm_add":"7","vm":"25","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/tyler-morton/profil/spieler/858993","style":"3.5★","notes":"","pied":""},{"id":"67hsovv8","nom":"Rafael Luís","poste":"MDC","age":"20","nat":"Portugais","club":"Benfica","vm_add":"1.2","vm":"4","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/rafael-luis/profil/spieler/637803","style":"3★","notes":"","pied":""},{"id":"dryfl024","nom":"Kennet Eichhorn","poste":"MDC","age":"16","nat":"Allemand","club":"Herta Berlin","vm_add":"6","vm":"20","date":"2025-11-02","tm_url":"https://www.transfermarkt.fr/kennet-eichhorn/profil/spieler/1214123","style":"5★","notes":"","pied":""},{"id":"1sewcwdx","nom":"Ian Mencía","poste":"MDC","age":"16","nat":"Espagnol","club":"Atletico Madrid","vm_add":"0","vm":"0","date":"2025-11-06","tm_url":"https://www.transfermarkt.fr/ian-mencia/profil/spieler/1242169","style":"","notes":"","pied":""},{"id":"nh4mv0bw","nom":"Zé Lucas","poste":"MDC","age":"17","nat":"Brésilien","club":"Sport Recife","vm_add":"8","vm":"8","date":"2026-01-06","tm_url":"https://www.transfermarkt.fr/ze-lucas/profil/spieler/1365897","style":"4★","notes":"","pied":""},{"id":"go8yclf0","nom":"Rafael Quintas","poste":"MDC","age":"18","nat":"Portugais","club":"Benfica","vm_add":"0","vm":"0","date":"2026-03-18","tm_url":"https://www.transfermarkt.fr/rafael-quintas/profil/spieler/1092997","style":"4★","notes":"","pied":""},{"id":"gss7tx0h","nom":"Sol Sidibé","poste":"MDC","age":"18","nat":"Anglais","club":"PSV","vm_add":"1","vm":"1.2","date":"2026-02-01","tm_url":"https://www.transfermarkt.fr/sol-sidibe/profil/spieler/962019","style":"","notes":"","pied":""},{"id":"mw4euo87","nom":"Davide Bartesaghi","poste":"DG","age":"19","nat":"Italien","club":"AC Milan","vm_add":"1.8","vm":"23","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/davide-bartesaghi/profil/spieler/887638","style":"","notes":"","pied":""},{"id":"jo3xkj76","nom":"Joaquin Seys","poste":"DG","age":"20","nat":"Belge","club":"Club Bruges","vm_add":"8","vm":"17","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/joaquin-seys/profil/spieler/981196","style":"","notes":"","pied":""},{"id":"qrll35u3","nom":"Dayann Methalie","poste":"DG","age":"19","nat":"Français","club":"Toulouse","vm_add":"4","vm":"12","date":"2025-10-11","tm_url":"https://www.transfermarkt.fr/dayann-methalie/profil/spieler/1191444","style":"4★","notes":"","pied":""},{"id":"ygm5ybhn","nom":"Saba Kharebashvili","poste":"DG","age":"17","nat":"Géorgien","club":"Dinamo Tbilisi","vm_add":"1.2","vm":"1.2","date":"2025-10-30","tm_url":"https://www.transfermarkt.fr/saba-kharebashvili/profil/spieler/1193794","style":"3★","notes":"","pied":""},{"id":"24xftej9","nom":"José Neto","poste":"DG","age":"17","nat":"Portugais","club":"Benfica","vm_add":"3","vm":"3","date":"2026-02-15","tm_url":"https://www.transfermarkt.fr/jose-neto/profil/spieler/1233701","style":"5★","notes":"","pied":""},{"id":"yliumdws","nom":"Adem Avdic","poste":"DG","age":"18","nat":"Serbe","club":"Etoile Rouge","vm_add":"4","vm":"4","date":"2026-03-26","tm_url":"https://www.transfermarkt.fr/adem-avdic/profil/spieler/952771","style":"","notes":"","pied":""},{"id":"md40psq2","nom":"Agustín Giay","poste":"DD","age":"21","nat":"Argentin","club":"Palmeiras","vm_add":"8","vm":"11","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/agustin-giay/profil/spieler/849582","style":"","notes":"","pied":""},{"id":"mvgb7qjx","nom":"Daniel Banjaqui","poste":"DD","age":"17","nat":"Portugais","club":"Benfica","vm_add":"1","vm":"5","date":"2026-01-06","tm_url":"https://www.transfermarkt.fr/daniel-banjaqui/profil/spieler/1134199","style":"5★","notes":"","pied":""},{"id":"ziecu4wx","nom":"Tylel Tati","poste":"DC","age":"17","nat":"Français","club":"Nantes","vm_add":"6","vm":"25","date":"2025-10-12","tm_url":"https://www.transfermarkt.fr/tylel-tati/profil/spieler/1241207","style":"5★","notes":"","pied":""},{"id":"ogbr65dj","nom":"Lucas Hogsberg","poste":"DC","age":"19","nat":"Danois","club":"Strasbourg","vm_add":"3.5","vm":"15","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/lucas-hogsberg/profil/spieler/926978","style":"3★","notes":"","pied":""},{"id":"dsk3p3ou","nom":"Diego Coppola","poste":"DC","age":"21","nat":"Italien","club":"Brighton","vm_add":"10","vm":"10","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/diego-coppola/profil/spieler/660860","style":"","notes":"","pied":""},{"id":"d12use8h","nom":"Matte Smets","poste":"DC","age":"21","nat":"Belge","club":"Anderlecht","vm_add":"13","vm":"11","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/matte-smets/profil/spieler/1019174","style":"","notes":"","pied":""},{"id":"xodmwmdf","nom":"Jérémy Jacquet","poste":"DC","age":"20","nat":"Français","club":"Rennes","vm_add":"10","vm":"55","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/jeremy-jacquet/profil/spieler/1004301","style":"5★","notes":"","pied":""},{"id":"x1g5h5ht","nom":"Jon Martín","poste":"DC","age":"19","nat":"Espagnol","club":"Real Sociedad","vm_add":"8","vm":"20","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/jon-martin/profil/spieler/1018938","style":"","notes":"","pied":""},{"id":"ofssv85s","nom":"Marli Salmon","poste":"DC","age":"16","nat":"Anglais","club":"Arsenal","vm_add":"1","vm":"4","date":"2026-02-01","tm_url":"https://www.transfermarkt.fr/marli-salmon/profil/spieler/1294399","style":"","notes":"","pied":""},{"id":"7jylisxm","nom":"Yusuf Akçiçek","poste":"DC","age":"19","nat":"Turc","club":"Fenerbahçe","vm_add":"12","vm":"15","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/yusuf-akcicek/profil/spieler/1100642","style":"","notes":"","pied":""},{"id":"7ppydz0m","nom":"Bung Meng Freimann","poste":"DC","age":"19","nat":"Suisse","club":"FC Lucerne","vm_add":"2.5","vm":"2.5","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/bung-meng-freimann/profil/spieler/922791","style":"","notes":"","pied":""},{"id":"mkx0ckyi","nom":"Eman Kospo","poste":"DC","age":"18","nat":"Bosnien","club":"Barcelone","vm_add":"0","vm":"1.5","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/eman-kospo/profil/spieler/1015822","style":"","notes":"","pied":""},{"id":"97scl9ec","nom":"Noahkai Banks","poste":"DC","age":"18","nat":"Américain","club":"Augsburg","vm_add":"6","vm":"22","date":"2025-07-31","tm_url":"https://www.transfermarkt.fr/noahkai-banks/profil/spieler/923945","style":"","notes":"","pied":""},{"id":"2qpd96wg","nom":"Elie Mbavu","poste":"DC","age":"16","nat":"Belge","club":"Genk","vm_add":"1.5","vm":"1.5","date":"2025-11-02","tm_url":"https://www.transfermarkt.fr/elie-mbavu/profil/spieler/1232104","style":"","notes":"","pied":""},{"id":"hnt26889","nom":"Nikola Simic","poste":"DC","age":"18","nat":"Serbe","club":"Partizan Belgrad","vm_add":"1.5","vm":"5","date":"2025-11-02","tm_url":"https://www.transfermarkt.fr/nikola-simic/profil/spieler/1011580","style":"","notes":"","pied":""},{"id":"84uujves","nom":"Mauro Furtado","poste":"DC","age":"17","nat":"Portugais","club":"Benfica","vm_add":"0","vm":"0","date":"2025-11-06","tm_url":"https://www.transfermarkt.fr/mauro-furtado/profil/spieler/1075886","style":"Très bon au pied","notes":"","pied":""},{"id":"8v371i8t","nom":"Kyllian Antonio","poste":"DC","age":"18","nat":"Français","club":"RC Lens","vm_add":"0.25","vm":"1.5","date":"2026-02-01","tm_url":"https://www.transfermarkt.fr/kyllian-antonio/profil/spieler/1186789","style":"","notes":"","pied":""},{"id":"9l19s49q","nom":"Fabian Merién","poste":"DC","age":"17","nat":"Néerlandais","club":"PSV","vm_add":"0.35","vm":"0.45","date":"2026-02-01","tm_url":"https://www.transfermarkt.fr/fabian-merien/profil/spieler/1135623","style":"","notes":"","pied":""},{"id":"ya70m4xb","nom":"Ahmed Hadzimujovic","poste":"DC","age":"18","nat":"Serbe","club":"Novi Pazar","vm_add":"1","vm":"1.5","date":"2026-02-01","tm_url":"https://www.transfermarkt.fr/ahmed-hadzimujovic/profil/spieler/1245543","style":"","notes":"","pied":""},{"id":"lavi5yms","nom":"Noah Markmann","poste":"DC","age":"18","nat":"Danois","club":"FC Nordsjaelland","vm_add":"0.7","vm":"2.5","date":"2026-02-01","tm_url":"https://www.transfermarkt.fr/noah-markmann/profil/spieler/1042873","style":"","notes":"","pied":""},{"id":"8mhsw1h5","nom":"Karim Coulibaly","poste":"DC","age":"18","nat":"Allemand","club":"Werder Bremen","vm_add":"20","vm":"22","date":"2026-02-01","tm_url":"https://www.transfermarkt.fr/karim-coulibaly/profil/spieler/1084638","style":"","notes":"Minimum 4*","pied":""},{"id":"o16xokya","nom":"Savo Radanovic","poste":"GB","age":"16","nat":"Serbe","club":"Etoile Rouge","vm_add":"0.4","vm":"0.4","date":"2026-02-01","tm_url":"https://www.transfermarkt.fr/savo-radanovic/profil/spieler/1141848","style":"","notes":"","pied":""},{"id":"mneuufg86xx","nom":"Jesse Derry","poste":"AG","age":"18","nat":"Anglais","club":"Chelsea","vm_add":"0","vm":"0","date":"2026-03-31","tm_url":"https://www.transfermarkt.fr/jesse-derry/profil/spieler/1135611","style":"","notes":"","pied":""},{"id":"mng756nkyxm","nom":"Samba Konaté","poste":"BU","age":"17","nat":"Français","club":"Leipzig","vm_add":"1","vm":"1","date":"2026-03-23","tm_url":"https://www.transfermarkt.fr/samba-konate/profil/spieler/1380977","style":"","notes":"","pied":""},{"id":"mng76rgzkid","nom":"Adil Hamdani","poste":"AG","age":"17","nat":"Français","club":"Lyon","vm_add":"1","vm":"1","date":"2026-03-23","tm_url":"https://www.transfermarkt.fr/adil-hamdani/profil/spieler/1301102","style":"","notes":"","pied":""},{"id":"mng79ajruov","nom":"Viktor Dadason","poste":"BU","age":"17","nat":"Islandais","club":"Copenhague","vm_add":"3","vm":"3","date":"2026-03-23","tm_url":"https://www.transfermarkt.fr/viktor-dadason/profil/spieler/1072751","style":"4★ Sesko","notes":"Longiligne, technique ok","pied":""},{"id":"mngbwnbyg0z","nom":"Ryan Kavuma-McQueen","poste":"AD","age":"17","nat":"Anglais","club":"Chelsea","vm_add":"0","vm":"0","date":"2026-04-01","tm_url":"https://www.transfermarkt.fr/ryan-kavuma-mcqueen/profil/spieler/1255573","style":"","notes":"","pied":""},{"id":"mngc2jovmv1","nom":"Samuele Inácio","poste":"MOC","age":"17","nat":"Italien","club":"Dortmund","vm_add":"3","vm":"3","date":"2026-04-01","tm_url":"https://www.transfermarkt.fr/samuele-inacio/profil/spieler/1058359","style":"","notes":"","pied":""}];
+var players = [];
+var editId = null;
+
+function load() {
+  try { var d = localStorage.getItem('scouting_v8'); players = d ? JSON.parse(d) : []; } catch(e) { players = []; }
+}
+function save() {
+  try { localStorage.setItem('scouting_v8', JSON.stringify(players)); } catch(e) {}
+}
+function exportData() {
+  load();
+  var blob = new Blob([JSON.stringify(players, null, 2)], {type:'application/json'});
+  var a = document.createElement('a'); a.href = URL.createObjectURL(blob);
+  a.download = 'scouting_backup_' + new Date().toISOString().slice(0,10) + '.json'; a.click();
+  showToast('Export téléchargé !');
+}
+function importData(e) {
+  var file = e.target.files[0]; if (!file) return;
+  var reader = new FileReader();
+  reader.onload = function(ev) {
+    try {
+      var imported = JSON.parse(ev.target.result);
+      if (!Array.isArray(imported)) throw new Error('Format invalide');
+      if (!confirm('Importer ' + imported.length + ' joueurs ? Cela remplacera les données actuelles.')) return;
+      players = imported; save(); render();
+      showToast(imported.length + ' joueurs importés !');
+    } catch(err) { alert('Fichier invalide : ' + err.message); }
+    e.target.value = '';
+  };
+  reader.readAsText(file);
+}
+function showToast(msg) {
+  var t = document.getElementById('toast'); t.textContent = msg; t.classList.add('show');
+  setTimeout(function() { t.classList.remove('show'); }, 2500);
+}
+function fmt(v) {
+  if (v == null || v === '' || v === '0') return '0M€';
+  var n = parseFloat(v); if (isNaN(n)) return '—';
+  if (n === 0) return '0M€';
+  if (n < 1) return (n * 1000).toFixed(0) + 'k€';
+  return n % 1 === 0 ? n + 'M€' : n.toFixed(1) + 'M€';
+}
+function fmtDate(d) {
+  if (!d) return '—'; var p = d.split('-');
+  return p.length === 3 ? p[2] + '/' + p[1] + '/' + p[0] : d;
+}
+function starsNum(p) {
+  var m = (p.style || '').match(/^([\d\.]+)★/); return m ? parseFloat(m[1]) : null;
+}
+function starsDisplay(p) {
+  var n = starsNum(p);
+  if (!n) return '<span style="color:#bbb;font-size:11px">à voir</span>';
+  var full = Math.floor(n), out = '';
+  for (var i = 0; i < full; i++) out += '★';
+  if (n % 1 >= 0.5) out += '½';
+  return '<span class="stars">' + out + '</span><span style="font-size:11px;color:#888;margin-left:2px">' + n + '</span>';
+}
+function piedDisplay(p) {
+  if (!p.pied) return '<span style="color:#ddd">—</span>';
+  if (p.pied === 'D') return '<span class="pied-d">D</span>';
+  if (p.pied === 'G') return '<span class="pied-g">G</span>';
+  if (p.pied === '2') return '<span class="pied-2">2</span>';
+  return '<span style="color:#bbb;font-size:11px">' + p.pied + '</span>';
+}
+function updateNatFilter() {
+  var sel = document.getElementById('f-nat'); var cur = sel.value;
+  var nats = [];
+  players.forEach(function(p) { if (p.nat && nats.indexOf(p.nat) === -1) nats.push(p.nat); });
+  nats.sort(function(a,b) { return a.localeCompare(b,'fr'); });
+  sel.innerHTML = '<option value="">Toutes nationalités</option>' + nats.map(function(n) {
+    return '<option' + (n === cur ? ' selected' : '') + '>' + n + '</option>';
+  }).join('');
+}
+function updateStats(list) {
+  document.getElementById('s-total').textContent = list.length;
+  var vms = list.map(function(p){return parseFloat(p.vm);}).filter(function(v){return !isNaN(v)&&v>0;});
+  document.getElementById('s-vm').textContent = vms.length ? (vms.reduce(function(a,b){return a+b;},0)/vms.length).toFixed(1)+'M€' : '—';
+  var ages = list.map(function(p){return parseInt(p.age);}).filter(function(v){return !isNaN(v);});
+  document.getElementById('s-age').textContent = ages.length ? (ages.reduce(function(a,b){return a+b;},0)/ages.length).toFixed(1) : '—';
+  var postes = []; list.forEach(function(p){if(p.poste&&postes.indexOf(p.poste)===-1)postes.push(p.poste);});
+  document.getElementById('s-postes').textContent = postes.length || '—';
+  var pv = 0; list.forEach(function(p){pv+=(parseFloat(p.vm)||0)-(parseFloat(p.vm_add)||0);});
+  document.getElementById('s-plusvalue').textContent = (pv>=0?'+':'')+pv.toFixed(1)+'M€';
+}
+function render() {
+  load(); updateNatFilter();
+  var search = document.getElementById('f-search').value.toLowerCase();
+  var poste = document.getElementById('f-poste').value;
+  var nat = document.getElementById('f-nat').value;
+  var pied = document.getElementById('f-pied').value;
+  var sf = document.getElementById('f-stars').value;
+  var ageMax = document.getElementById('f-age-max').value;
+  var vmMax = document.getElementById('f-vm-max').value;
+  var sort = document.getElementById('f-sort').value;
+
+  var list = players.filter(function(p) {
+    if (search && !(
+      (p.nom||'').toLowerCase().includes(search)||
+      (p.club||'').toLowerCase().includes(search)||
+      (p.nat||'').toLowerCase().includes(search)||
+      (p.notes||'').toLowerCase().includes(search)
+    )) return false;
+    if (poste && p.poste !== poste) return false;
+    if (nat && p.nat !== nat) return false;
+    if (pied && p.pied !== pied) return false;
+    if (ageMax && parseInt(p.age) > parseInt(ageMax)) return false;
+    if (vmMax && parseFloat(p.vm) > parseFloat(vmMax)) return false;
+    if (sf !== '') {
+      var sn = starsNum(p);
+      if (sf === '0') { if (sn !== null) return false; }
+      else { if (!sn || sn < parseFloat(sf)) return false; }
+    }
+    return true;
+  });
+
+  var parts = sort.split('_'), key = parts[0], dir = parts[1];
+  list.sort(function(a,b) {
+    var va, vb;
+    if (key==='stars'){va=starsNum(a)||-1;vb=starsNum(b)||-1;}
+    else if(key==='date'){va=a.date||'0000';vb=b.date||'0000';}
+    else if(key==='age'){va=parseInt(a.age)||0;vb=parseInt(b.age)||0;}
+    else if(key==='vm'){va=parseFloat(a.vm)||0;vb=parseFloat(b.vm)||0;}
+    else if(key==='evol'){va=(parseFloat(a.vm)||0)-(parseFloat(a.vm_add)||0);vb=(parseFloat(b.vm)||0)-(parseFloat(b.vm_add)||0);}
+    else{va=(a.nom||'').toLowerCase();vb=(b.nom||'').toLowerCase();}
+    if(va<vb)return dir==='asc'?-1:1;
+    if(va>vb)return dir==='asc'?1:-1;
+    return 0;
+  });
+
+  updateStats(list);
+  document.getElementById('count-line').textContent = list.length+' joueur'+(list.length>1?'s':'')+(list.length!==players.length?' (filtré sur '+players.length+')':'');
+  var tbody = document.getElementById('tbody');
+  var empty = document.getElementById('empty-state');
+  if (!list.length) { tbody.innerHTML=''; empty.style.display='block'; return; }
+  empty.style.display='none';
+
+  tbody.innerHTML = list.map(function(p,i) {
+    var bc='badge badge-'+(p.poste||'').toLowerCase();
+    var va=parseFloat(p.vm_add)||0, vc=parseFloat(p.vm)||0, diff=vc-va;
+    var evolHtml = diff>0?'<span class="evol-up">▲'+diff.toFixed(1)+'M</span>':
+                   diff<0?'<span class="evol-dn">▼'+Math.abs(diff).toFixed(1)+'M</span>':
+                   '<span style="color:#bbb;font-size:11px">—</span>';
+    var ageWarn = parseInt(p.age)>23?' <span style="color:#b45309;font-size:10px">⚠</span>':'';
+    var styleClean=(p.style||'').replace(/^[\d\.]+★\s*/,'');
+    var nameHtml = (p.tm_url && p.tm_url.indexOf('/spieler/0')===-1)
+      ? '<a href="'+p.tm_url+'" target="_blank" class="tm-link" title="Voir sur Transfermarkt">'+(p.nom||'—')+'</a>'
+      : (p.nom||'—');
+    return '<tr>'+
+      '<td style="color:#bbb;font-size:11px">'+(i+1)+'</td>'+
+      '<td style="font-weight:500;white-space:nowrap">'+nameHtml+'</td>'+
+      '<td><span class="'+bc+'">'+(p.poste||'—')+'</span></td>'+
+      '<td>'+(p.age||'—')+ageWarn+'</td>'+
+      '<td>'+piedDisplay(p)+'</td>'+
+      '<td>'+starsDisplay(p)+'</td>'+
+      '<td style="font-size:12px;white-space:nowrap">'+(p.nat||'—')+'</td>'+
+      '<td style="font-size:12px;white-space:nowrap">'+(p.club||'—')+'</td>'+
+      '<td class="vm-cell">'+fmt(p.vm_add)+'</td>'+
+      '<td class="vm-cell">'+fmt(p.vm)+'</td>'+
+      '<td class="vm-cell">'+evolHtml+'</td>'+
+      '<td class="notes-cell" title="'+styleClean.replace(/"/g,'&quot;')+'">'+( styleClean||'—')+'</td>'+
+      '<td class="notes-cell" title="'+(p.notes||'').replace(/"/g,'&quot;')+'">'+(p.notes||'—')+'</td>'+
+      '<td style="white-space:nowrap;color:#888;font-size:12px">'+fmtDate(p.date)+'</td>'+
+      '<td style="white-space:nowrap">'+
+        '<button class="btn" style="padding:4px 8px;font-size:12px;margin-right:4px" onclick="editPlayer(\''+p.id+'\')">✏</button>'+
+        '<button class="btn danger" style="padding:4px 8px;font-size:12px" onclick="deletePlayer(\''+p.id+'\')">✕</button>'+
+      '</td>'+
+    '</tr>';
+  }).join('');
+}
+
+function openModal(id) {
+  editId = id || null;
+  var p = id ? players.find(function(x){return x.id===id;}) : null;
+  document.getElementById('modal-title').textContent = p ? 'Modifier — '+p.nom : 'Nouveau joueur';
+  document.getElementById('f-nom').value = (p&&p.nom)||'';
+  document.getElementById('f-fposte').value = (p&&p.poste)||'';
+  document.getElementById('f-fage').value = (p&&p.age)||'';
+  document.getElementById('f-fpied').value = (p&&p.pied)||'';
+  var sn = p ? starsNum(p) : null;
+  document.getElementById('f-fstars').value = sn||'';
+  document.getElementById('f-fnat').value = (p&&p.nat)||'';
+  document.getElementById('f-fclub').value = (p&&p.club)||'';
+  document.getElementById('f-fvmadd').value = (p&&p.vm_add)||'';
+  document.getElementById('f-fvm').value = (p&&p.vm)||'';
+  document.getElementById('f-fdate').value = (p&&p.date)||new Date().toISOString().split('T')[0];
+  document.getElementById('f-ftm').value = (p&&p.tm_url)||'';
+  document.getElementById('f-fstyle').value = p ? (p.style||'').replace(/^[\d\.]+★\s*/,'') : '';
+  document.getElementById('f-fnotes').value = (p&&p.notes)||'';
+  document.getElementById('age-warn').style.display='none';
+  document.getElementById('modal').style.display='flex';
+}
+function closeModal() { document.getElementById('modal').style.display='none'; editId=null; }
+function checkAge() {
+  var v=parseInt(document.getElementById('f-fage').value);
+  document.getElementById('age-warn').style.display=(v&&v>23)?'block':'none';
+}
+function editPlayer(id) { load(); openModal(id); }
+function deletePlayer(id) {
+  if (!confirm('Supprimer ce joueur ?')) return;
+  load(); players=players.filter(function(p){return p.id!==id;}); save(); render();
+  showToast('Joueur supprimé');
+}
+function savePlayer() {
+  var nom=document.getElementById('f-nom').value.trim();
+  var poste=document.getElementById('f-fposte').value;
+  if (!nom||!poste) { alert('Le nom et le poste sont obligatoires.'); return; }
+  load();
+  var existing=editId?players.find(function(p){return p.id===editId;}):null;
+  var starsVal=document.getElementById('f-fstars').value;
+  var styleText=document.getElementById('f-fstyle').value.trim();
+  var styleField=starsVal?(starsVal+'★'+(styleText?' '+styleText:'')):styleText;
+  var obj={
+    id:editId||(Date.now().toString(36)+Math.random().toString(36).slice(2,5)),
+    nom:nom, poste:poste,
+    age:document.getElementById('f-fage').value,
+    pied:document.getElementById('f-fpied').value,
+    nat:document.getElementById('f-fnat').value.trim(),
+    club:document.getElementById('f-fclub').value.trim(),
+    vm_add:document.getElementById('f-fvmadd').value,
+    vm:document.getElementById('f-fvm').value,
+    date:existing?existing.date:document.getElementById('f-fdate').value,
+    tm_url:document.getElementById('f-ftm').value.trim(),
+    style:styleField,
+    notes:document.getElementById('f-fnotes').value.trim()
+  };
+  if (editId) { var idx=players.findIndex(function(p){return p.id===editId;}); if(idx>=0)players[idx]=obj; }
+  else players.push(obj);
+  save(); closeModal(); render();
+  showToast(editId?'Joueur modifié !':'Joueur ajouté !');
+}
+
+document.getElementById('btn-cancel').addEventListener('click', closeModal);
+document.getElementById('btn-save').addEventListener('click', savePlayer);
+document.getElementById('modal').addEventListener('click', function(e){if(e.target===document.getElementById('modal'))closeModal();});
+
+document.getElementById('date-display').textContent='Mis à jour le '+new Date().toLocaleDateString('fr-FR');
+load();
+if (players.length===0) { players=PRELOADED.map(function(p){return Object.assign({},p);}); save(); }
+render();
+</script>
+</body>
+</html>
